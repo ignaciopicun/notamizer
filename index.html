@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notamizer - Random Musical Notes</title>
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cherry+Bomb+One&display=swap" rel="stylesheet">
+    <!-- PicoCSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <main class="container">
+        <div class="app-header">
+            <div class="app-branding">
+                <img src="assets/icon.png" alt="Notamizer Icon" class="app-icon">
+                <h1 class="app-title">Notamizer</h1>
+            </div>
+        </div>
+        <div class="note-container">
+            <div id="note" class="musical-note">A</div>
+        </div>
+        
+        <section class="controls">
+            <article>
+                <h3>Tempo Control</h3>
+                <label for="tempo">
+                    Speed: <span id="tempo-value">60</span> BPM
+                    <input type="range" id="tempo" name="tempo" min="30" max="240" value="60">
+                </label>
+            </article>
+            
+            <article>
+                <h3>Note Selection</h3>
+                <div class="note-selection">
+                    <div class="note-grid">
+                        <!-- Note selection grid -->
+                        <div class="note-cell header">Note</div>
+                        <div class="note-cell header toggle-column" data-column="natural">Natural</div>
+                        <div class="note-cell header toggle-column" data-column="sharp">Sharp (♯)</div>
+                        <div class="note-cell header toggle-column" data-column="flat">Flat (♭)</div>
+                        
+                        <!-- C -->
+                        <div class="note-cell toggle-row" data-note="C">C</div>
+                        <div class="note-cell"><input type="checkbox" id="C-natural" data-note="C" data-type="natural" checked></div>
+                        <div class="note-cell"><input type="checkbox" id="C-sharp" data-note="C" data-type="sharp" checked></div>
+                        <div class="note-cell"><input type="checkbox" id="C-flat" data-note="C" data-type="flat" checked></div>
+                        
+                        <!-- D -->
+                        <div class="note-cell toggle-row" data-note="D">D</div>
+                        <div class="note-cell"><input type="checkbox" id="D-natural" data-note="D" data-type="natural" checked></div>
+                        <div class="note-cell"><input type="checkbox" id="D-sharp" data-note="D" data-type="sharp" checked></div>
+                        <div class="note-cell"><input type="checkbox" id="D-flat" data-note="D" data-type="flat" checked></div>
+                        
+                        <!-- E -->
+                        <div class="note-cell toggle-row" data-note="E">E</div>
+                        <div class="note-cell"><input type="checkbox" id="E-natural" data-note="E" data-type="natural" checked></div>
+                        <div class="note-cell"><input type="checkbox" id="E-sharp" data-note="E" data-type="sharp" checked></div>
+                        <div class="note-cell"><input type="checkbox" id="E-flat" data-note="E" data-type="flat" checked></div>
+                        
+                        <!-- F -->
+                        <div class="note-cell toggle-row" data-note="F">F</div>
+                        <div class="note-cell"><input type="checkbox" id="F-natural" data-note="F" data-type="natural" checked></div>
+                        <div class="note-cell"><input type="checkbox" id="F-sharp" data-note="F" data-type="sharp" checked></div>
+                        <div class="note-cell"><input type="checkbox" id="F-flat" data-note="F" data-type="flat" checked></div>
+                        
+                        <!-- G -->
+                        <div class="note-cell toggle-row" data-note="G">G</div>
+                        <div class="note-cell"><input type="checkbox" id="G-natural" data-note="G" data-type="natural" checked></div>
+                        <div class="note-cell"><input type="checkbox" id="G-sharp" data-note="G" data-type="sharp" checked></div>
+                        <div class="note-cell"><input type="checkbox" id="G-flat" data-note="G" data-type="flat" checked></div>
+                        
+                        <!-- A -->
+                        <div class="note-cell toggle-row" data-note="A">A</div>
+                        <div class="note-cell"><input type="checkbox" id="A-natural" data-note="A" data-type="natural" checked></div>
+                        <div class="note-cell"><input type="checkbox" id="A-sharp" data-note="A" data-type="sharp" checked></div>
+                        <div class="note-cell"><input type="checkbox" id="A-flat" data-note="A" data-type="flat" checked></div>
+                        
+                        <!-- B -->
+                        <div class="note-cell toggle-row" data-note="B">B</div>
+                        <div class="note-cell"><input type="checkbox" id="B-natural" data-note="B" data-type="natural" checked></div>
+                        <div class="note-cell"><input type="checkbox" id="B-sharp" data-note="B" data-type="sharp" checked></div>
+                        <div class="note-cell"><input type="checkbox" id="B-flat" data-note="B" data-type="flat" checked></div>
+                    </div>
+                    
+                    <div class="selection-buttons">
+                        <button id="select-all" class="secondary">Select All</button>
+                        <button id="deselect-all" class="secondary">Deselect All</button>
+                    </div>
+                </div>
+            </article>
+        </section>
+        
+
+    </main>
+    <script src="js/script.js"></script>
+</body>
+</html>
