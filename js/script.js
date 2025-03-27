@@ -3,29 +3,29 @@ function normalizeNote(note) {
   // Define preferred forms for enharmonic groups
   const preferredForm = {
     // For circular references, we choose one canonical form
-    "C#": "Db",  // Prefer flats
+    "C#": "Db", // Prefer flats
     "D#": "Eb",
     "F#": "Gb",
     "G#": "Ab",
     "A#": "Bb",
-    "B#": "C",   // Prefer natural
+    "B#": "C", // Prefer natural
     "E#": "F",
-    "Cb": "B",   // Prefer natural
-    "Fb": "E",
+    Cb: "B", // Prefer natural
+    Fb: "E",
     // Add mappings for all possible input forms
-    "Db": "Db",
-    "Eb": "Eb",
-    "Gb": "Gb",
-    "Ab": "Ab",
-    "Bb": "Bb",
-    "C": "C",
-    "F": "F",
-    "B": "B",
-    "E": "E",
+    Db: "Db",
+    Eb: "Eb",
+    Gb: "Gb",
+    Ab: "Ab",
+    Bb: "Bb",
+    C: "C",
+    F: "F",
+    B: "B",
+    E: "E",
     // Add remaining natural notes
-    "D": "D",
-    "G": "G",
-    "A": "A"
+    D: "D",
+    G: "G",
+    A: "A",
   };
 
   // First remove any numbers (octave indicators)
@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Compare with current displayed note using normalized forms
       const normalizedDetected = normalizeNote(detectedNote);
       const normalizedDisplayed = normalizeNote(currentNote);
-      console.log("Comparing:", normalizedDetected, normalizedDisplayed);
+      // console.log("Comparing:", normalizedDetected, normalizedDisplayed);
       if (normalizedDetected === normalizedDisplayed) {
         audioFeedback.playCorrect();
       } else {
