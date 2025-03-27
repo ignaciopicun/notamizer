@@ -179,7 +179,7 @@ h3 {
   background-color: white;
   border-radius: 1rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  padding: 0.75rem 1rem;
+  padding: 0.25rem;
   z-index: 1000;
   display: flex;
   flex-direction: column;
@@ -194,16 +194,15 @@ h3 {
 }
 
 .practice-label {
-  font-size: 0.85rem;
+  font-size: 0.5rem;
   font-weight: 600;
-  color: #555;
-  margin-bottom: 0.5rem;
+  color: var(--primary-color);
   text-align: center;
 }
 
 .practice-controls {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
   align-items: center;
   justify-content: center;
   margin: 0.5rem 0;
@@ -219,8 +218,8 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 3.5rem;
-  height: 3.5rem;
+  min-width: 1.75rem;
+  height: 1.75rem;
   background-color: #f8f9fa;
   border-radius: 50%;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -229,13 +228,13 @@ h3 {
 
 #detected-note {
   font-weight: bold;
-  font-size: 1.5rem;
+  font-size: 0.75rem;
   color: var(--primary-color);
 }
 
 .icon-button {
-  width: 3rem;
-  height: 3rem;
+  width: 2rem;
+  height: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
