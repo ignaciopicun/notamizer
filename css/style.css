@@ -170,6 +170,113 @@ h3 {
   font-size: 0.9rem;
 }
 
+/* Guitar practice mode */
+/* Floating practice container */
+.floating-practice-container {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background-color: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 0.75rem 1rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid #eee;
+  transition: all 0.3s ease;
+}
+
+.floating-practice-container:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.practice-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.practice-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  margin: 0.5rem 0;
+}
+
+.practice-controls.minimal {
+  padding: 0.5rem;
+  background-color: transparent;
+  border-radius: 0.5rem;
+}
+
+.detected-note-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.5rem;
+  height: 3.5rem;
+  background-color: #f8f9fa;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 2px solid #e9ecef;
+}
+
+#detected-note {
+  font-weight: bold;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+.icon-button {
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  padding: 0;
+  margin: 0;
+}
+
+.circle {
+  border-radius: 50%;
+}
+
+.feedback-indicator {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.feedback-indicator.correct {
+  background-color: rgba(76, 175, 80, 0.2);
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+  opacity: 1;
+}
+
+.feedback-indicator.incorrect {
+  background-color: rgba(244, 67, 54, 0.2);
+  box-shadow: 0 0 20px rgba(244, 67, 54, 0.5);
+  opacity: 1;
+}
+
+.note-container {
+  position: relative;
+  overflow: hidden;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .musical-note {
@@ -182,6 +289,10 @@ h3 {
   
   .note-grid {
     font-size: 0.9rem;
+  }
+  
+  .practice-controls {
+    flex-direction: column;
   }
 }
 
@@ -199,6 +310,9 @@ h3 {
     gap: 0.25rem;
   }
   
+  .practice-controls {
+    flex-direction: column;
+  }
   .note-cell {
     padding: 0.25rem;
   }
