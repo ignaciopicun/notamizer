@@ -22,6 +22,7 @@
         </div>
         <div class="note-container">
             <div id="note" class="musical-note">A</div>
+            <div id="feedback-indicator" class="feedback-indicator"></div>
         </div>
         
         <section class="controls">
@@ -32,6 +33,17 @@
                     <input type="range" id="tempo" name="tempo" min="30" max="240" value="60">
                 </label>
             </article>
+            
+            <!-- Floating practice controls container -->
+            <div class="floating-practice-container compact">
+                <div class="practice-controls minimal">
+                    <button id="start-listening" class="primary outline circle icon-button small">▶</button>
+                    <button id="stop-listening" class="secondary outline circle icon-button small" disabled>■</button>
+                    <div id="detected-note-container" class="detected-note-container small">
+                        <span id="detected-note">-</span>
+                    </div>
+                </div>
+            </div>
             
             <article>
                 <h3>Note Selection</h3>
@@ -94,8 +106,14 @@
             </article>
         </section>
         
-
+        <footer>
+            <p class="info">Connect your guitar and click "Start Listening" to practice with audio feedback.</p>
+        </footer>
     </main>
+    
+    <!-- Scripts -->
+    <script src="js/pitch-detection.js"></script>
+    <script src="js/audio-feedback.js"></script>
     <script src="js/script.js"></script>
 </body>
 </html>
