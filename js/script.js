@@ -1,3 +1,40 @@
+// Helper function to normalize notes to a standard form for comparison
+function normalizeNote(note) {
+  // Define preferred forms for enharmonic groups
+  const preferredForm = {
+    // For circular references, we choose one canonical form
+    "C#": "Db",  // Prefer flats
+    "D#": "Eb",
+    "F#": "Gb",
+    "G#": "Ab",
+    "A#": "Bb",
+    "B#": "C",   // Prefer natural
+    "E#": "F",
+    "Cb": "B",   // Prefer natural
+    "Fb": "E",
+    // Add mappings for all possible input forms
+    "Db": "Db",
+    "Eb": "Eb",
+    "Gb": "Gb",
+    "Ab": "Ab",
+    "Bb": "Bb",
+    "C": "C",
+    "F": "F",
+    "B": "B",
+    "E": "E",
+    // Add remaining natural notes
+    "D": "D",
+    "G": "G",
+    "A": "A"
+  };
+
+  // First remove any numbers (octave indicators)
+  note = note.replace(/[0-9]/g, "");
+
+  // Return the preferred form of this note
+  return preferredForm[note] || note;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   // Initialize pitch detection event listener
   let lastDetectedNote = null;
@@ -6,10 +43,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // Only play feedback if the detected note changes
     if (detectedNote !== lastDetectedNote) {
       lastDetectedNote = detectedNote;
-      // Compare with current displayed note (ignoring octave number)
-      const currentDisplayedNote = currentNote.replace(/[0-9]/g, "");
-      console.log(detectedNote, currentDisplayedNote);
-      if (detectedNote === currentDisplayedNote) {
+      // Compare with current displayed note using normalized forms
+      const normalizedDetected = normalizeNote(detectedNote);
+      const normalizedDisplayed = normalizeNote(currentNote);
+      console.log("Comparing:", normalizedDetected, normalizedDisplayed);
+      if (normalizedDetected === normalizedDisplayed) {
         audioFeedback.playCorrect();
       } else {
         audioFeedback.playIncorrect();
@@ -30,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const musicalNotes = ["C", "D", "E", "F", "G", "A", "B"];
 
   // Accidentals (natural, sharp, flat)
-  const accidentalSymbols = { natural: "", sharp: "♯", flat: "♭" };
+  const accidentalSymbols = { natural: "", sharp: "#", flat: "b" };
 
   // Store the current note to avoid repetition
   let currentNote = "";

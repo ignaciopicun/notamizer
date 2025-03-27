@@ -5,7 +5,7 @@ A simple web application that displays random musical notes in American notation
 ## Features
 
 - Displays large musical notes (C through B)
-- Includes accidentals (sharp ♯, flat ♭)
+- Includes accidentals (sharp #, flat b)
 - Automatically changes to a new random note every second
 - Clean, responsive design using PicoCSS
 
