@@ -1,4 +1,22 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Initialize pitch detection event listener
+  let lastDetectedNote = null;
+  document.addEventListener("noteDetected", (e) => {
+    const detectedNote = e.detail.note;
+    // Only play feedback if the detected note changes
+    if (detectedNote !== lastDetectedNote) {
+      lastDetectedNote = detectedNote;
+      // Compare with current displayed note (ignoring octave number)
+      const currentDisplayedNote = currentNote.replace(/[0-9]/g, "");
+      console.log(detectedNote, currentDisplayedNote);
+      if (detectedNote === currentDisplayedNote) {
+        audioFeedback.playCorrect();
+      } else {
+        audioFeedback.playIncorrect();
+      }
+    }
+  });
+
   // Get DOM elements
   const noteElement = document.getElementById("note");
   const tempoSlider = document.getElementById("tempo");
@@ -124,6 +142,8 @@ document.addEventListener("DOMContentLoaded", () => {
       noteElement.textContent = newNote;
       // Remove animation class
       noteElement.classList.remove("note-change");
+      // Reset audio feedback for the new note
+      audioFeedback.setNewNote(newNote);
     }, 150);
   }
 

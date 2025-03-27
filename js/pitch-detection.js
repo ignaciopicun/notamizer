@@ -33,24 +33,38 @@ var DEBUGCANVAS = null;
 var mediaStreamSource = null;
 var noteElem, detectedNoteElem;
 
+// Variables for note stability detection
+var noteBuffer = [];
+var noteBufferSize = 5; // Number of samples to check for stability
+var requiredStability = 4; // Number of matching samples needed for stability
+var lastEmittedNote = null;
+var lastDetectionTime = 0;
+var detectionDebounceTime = 200; // Minimum time between note detections in ms
+
+// Helper function to check note stability
+function checkNoteStability(note) {
+    if (!note) return false;
+    
+    // Add new note to buffer
+    noteBuffer.push(note);
+    // Keep buffer at fixed size
+    if (noteBuffer.length > noteBufferSize) {
+        noteBuffer.shift();
+    }
+    
+    // Count occurrences of the current note in the buffer
+    const occurrences = noteBuffer.filter(n => n === note).length;
+    
+    // Check if we have enough stable readings
+    return occurrences >= requiredStability;
+}
+
 window.onload = function () {
   audioContext = new AudioContext();
   MAX_SIZE = Math.max(4, Math.floor(audioContext.sampleRate / 5000)); // corresponds to a 5kHz signal
 
   noteElem = document.getElementById("note");
   detectedNoteElem = document.getElementById("detected-note");
-
-  fetch("whistling3.ogg")
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error, status = ${response.status}`);
-      }
-      return response.arrayBuffer();
-    })
-    .then((buffer) => audioContext.decodeAudioData(buffer))
-    .then((decodedData) => {
-      theBuffer = decodedData;
-    });
 };
 
 function startPitchDetect() {
@@ -275,10 +289,10 @@ function autoCorrelate(buf, sampleRate) {
     rms += val * val;
   }
   rms = Math.sqrt(rms / SIZE);
-  console.log("RMS value:", rms);
+  //   console.log("RMS value:", rms);
   if (rms < 0.01) {
     // not enough signal
-    console.log("Signal too weak");
+    // console.log("Signal too weak");
     return -1;
   }
 
@@ -336,7 +350,26 @@ function updatePitch(time) {
   } else {
     pitch = ac;
     var note = noteFromPitch(pitch);
-    detectedNoteElem.innerHTML = noteStrings[note % 12];
+    const detectedNote = noteStrings[note % 12];
+    detectedNoteElem.innerHTML = detectedNote;
+
+    // Check note stability and debounce
+    const now = Date.now();
+    if (checkNoteStability(detectedNote) && 
+        detectedNote !== lastEmittedNote && 
+        now - lastDetectionTime >= detectionDebounceTime) {
+      // Clear buffer after emitting
+      noteBuffer = [];
+      
+      // Dispatch noteDetected event
+      const noteDetectedEvent = new CustomEvent("noteDetected", {
+        detail: { note: detectedNote },
+      });
+      document.dispatchEvent(noteDetectedEvent);
+
+      lastEmittedNote = detectedNote;
+      lastDetectionTime = now;
+    }
   }
 
   if (!window.requestAnimationFrame)
