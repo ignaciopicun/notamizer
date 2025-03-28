@@ -35,11 +35,11 @@ var noteElem, detectedNoteElem;
 
 // Variables for note stability detection
 var noteBuffer = [];
-var noteBufferSize = 8; // Number of samples to check for stability
-var requiredStability = 7; // Number of matching samples needed for stability
+var noteBufferSize = 16; // Number of samples to check for stability
+var requiredStability = 16; // Number of matching samples needed for stability
 var lastEmittedNote = null;
 var lastDetectionTime = 0;
-var detectionDebounceTime = 150; // Minimum time between note detections in ms
+var detectionDebounceTime = 220; // Minimum time between note detections in ms
 var noteStartTime = 0; // When the current note started
 var isCurrentlyPlaying = false; // Whether a note is currently being played
 var longNoteThreshold = 400; // Time in ms to consider a note as "long"
@@ -67,6 +67,11 @@ function checkNoteStability(note) {
 window.onload = function () {
   audioContext = new AudioContext();
   MAX_SIZE = Math.max(4, Math.floor(audioContext.sampleRate / 5000)); // corresponds to a 5kHz signal
+
+  // Update Macleod config with actual sample rate
+  macleodConfig.sampleRate = audioContext.sampleRate;
+  // Initialize Macleod detector
+  macleodDetector = Macleod(macleodConfig);
 
   noteElem = document.getElementById("note");
   detectedNoteElem = document.getElementById("detected-note");
@@ -193,6 +198,16 @@ var tracks = null;
 var buflen = 2048;
 var buf = new Float32Array(buflen);
 
+// Macleod pitch detector configuration
+const macleodConfig = {
+  bufferSize: buflen,
+  cutoff: 0.97,
+  sampleRate: 44100, // Will be updated with actual sample rate
+};
+
+// Initialize Macleod detector
+let macleodDetector = null;
+
 var noteStrings = [
   "C",
   "C#",
@@ -223,125 +238,144 @@ function centsOffFromPitch(frequency, note) {
   );
 }
 
-// this is the previously used pitch detection algorithm.
-/*
-var MIN_SAMPLES = 0;  // will be initialized when AudioContext is created.
-var GOOD_ENOUGH_CORRELATION = 0.9; // this is the "bar" for how close a correlation needs to be
+// Macleod pitch detection algorithm implementation
+function Macleod(params = {}) {
+  const config = {
+    bufferSize: 2048,
+    cutoff: 0.97,
+    sampleRate: 44100,
+    ...params,
+  };
 
-function autoCorrelate( buf, sampleRate ) {
-	var SIZE = buf.length;
-	var MAX_SAMPLES = Math.floor(SIZE/2);
-	var best_offset = -1;
-	var best_correlation = 0;
-	var rms = 0;
-	var foundGoodCorrelation = false;
-	var correlations = new Array(MAX_SAMPLES);
+  const { bufferSize, cutoff, sampleRate } = config;
+  const SMALL_CUTOFF = 0.5;
+  const LOWER_PITCH_CUTOFF = 80;
+  const nsdf = new Float32Array(bufferSize);
+  const squaredBufferSum = new Float32Array(bufferSize);
+  let turningPointX, turningPointY;
+  let maxPositions = [];
+  let periodEstimates = [];
+  let ampEstimates = [];
 
-	for (var i=0;i<SIZE;i++) {
-		var val = buf[i];
-		rms += val*val;
-	}
-	rms = Math.sqrt(rms/SIZE);
-	if (rms<0.01) // not enough signal
-		return -1;
+  function normalizedSquareDifference(float32AudioBuffer) {
+    squaredBufferSum[0] = float32AudioBuffer[0] * float32AudioBuffer[0];
+    for (let i = 1; i < float32AudioBuffer.length; i++) {
+      squaredBufferSum[i] =
+        float32AudioBuffer[i] * float32AudioBuffer[i] + squaredBufferSum[i - 1];
+    }
+    for (let tau = 0; tau < float32AudioBuffer.length; tau++) {
+      let acf = 0;
+      const divisorM =
+        squaredBufferSum[float32AudioBuffer.length - 1 - tau] +
+        squaredBufferSum[float32AudioBuffer.length - 1] -
+        squaredBufferSum[tau];
+      for (let i = 0; i < float32AudioBuffer.length - tau; i++) {
+        acf += float32AudioBuffer[i] * float32AudioBuffer[i + tau];
+      }
+      nsdf[tau] = (2 * acf) / divisorM;
+    }
+  }
 
-	var lastCorrelation=1;
-	for (var offset = MIN_SAMPLES; offset < MAX_SAMPLES; offset++) {
-		var correlation = 0;
+  function parabolicInterpolation(tau) {
+    const nsdfa = nsdf[tau - 1],
+      nsdfb = nsdf[tau],
+      nsdfc = nsdf[tau + 1],
+      bValue = tau,
+      bottom = nsdfc + nsdfa - 2 * nsdfb;
+    if (bottom === 0) {
+      turningPointX = bValue;
+      turningPointY = nsdfb;
+    } else {
+      const delta = nsdfa - nsdfc;
+      turningPointX = bValue + delta / (2 * bottom);
+      turningPointY = nsdfb - (delta * delta) / (8 * bottom);
+    }
+  }
 
-		for (var i=0; i<MAX_SAMPLES; i++) {
-			correlation += Math.abs((buf[i])-(buf[i+offset]));
-		}
-		correlation = 1 - (correlation/MAX_SAMPLES);
-		correlations[offset] = correlation; // store it, for the tweaking we need to do below.
-		if ((correlation>GOOD_ENOUGH_CORRELATION) && (correlation > lastCorrelation)) {
-			foundGoodCorrelation = true;
-			if (correlation > best_correlation) {
-				best_correlation = correlation;
-				best_offset = offset;
-			}
-		} else if (foundGoodCorrelation) {
-			// short-circuit - we found a good correlation, then a bad one, so we'd just be seeing copies from here.
-			// Now we need to tweak the offset - by interpolating between the values to the left and right of the
-			// best offset, and shifting it a bit.  This is complex, and HACKY in this code (happy to take PRs!) -
-			// we need to do a curve fit on correlations[] around best_offset in order to better determine precise
-			// (anti-aliased) offset.
+  function peakPicking() {
+    let pos = 0;
+    let curMaxPos = 0;
 
-			// we know best_offset >=1, 
-			// since foundGoodCorrelation cannot go to true until the second pass (offset=1), and 
-			// we can't drop into this clause until the following pass (else if).
-			var shift = (correlations[best_offset+1] - correlations[best_offset-1])/correlations[best_offset];  
-			return sampleRate/(best_offset+(8*shift));
-		}
-		lastCorrelation = correlation;
-	}
-	if (best_correlation > 0.01) {
-		// console.log("f = " + sampleRate/best_offset + "Hz (rms: " + rms + " confidence: " + best_correlation + ")")
-		return sampleRate/best_offset;
-	}
-	return -1;
-//	var best_frequency = sampleRate/best_offset;
+    while (pos < (nsdf.length - 1) / 3 && nsdf[pos] > 0) pos++;
+    while (pos < nsdf.length - 1 && nsdf[pos] <= 0) pos++;
+    if (pos === 0) pos = 1;
+
+    while (pos < nsdf.length - 1) {
+      if (nsdf[pos] > nsdf[pos - 1] && nsdf[pos] >= nsdf[pos + 1]) {
+        if (curMaxPos === 0 || nsdf[pos] > nsdf[curMaxPos]) {
+          curMaxPos = pos;
+        }
+      }
+      pos++;
+      if (pos < nsdf.length - 1 && nsdf[pos] <= 0) {
+        if (curMaxPos > 0) {
+          maxPositions.push(curMaxPos);
+          curMaxPos = 0;
+        }
+        while (pos < nsdf.length - 1 && nsdf[pos] <= 0) pos++;
+      }
+    }
+    if (curMaxPos > 0) maxPositions.push(curMaxPos);
+  }
+
+  return function detector(float32AudioBuffer) {
+    maxPositions = [];
+    periodEstimates = [];
+    ampEstimates = [];
+
+    normalizedSquareDifference(float32AudioBuffer);
+    peakPicking();
+
+    let highestAmplitude = -Infinity;
+    let pitch = -1;
+
+    for (let i = 0; i < maxPositions.length; i++) {
+      const tau = maxPositions[i];
+      highestAmplitude = Math.max(highestAmplitude, nsdf[tau]);
+
+      if (nsdf[tau] > SMALL_CUTOFF) {
+        parabolicInterpolation(tau);
+        ampEstimates.push(turningPointY);
+        periodEstimates.push(turningPointX);
+        highestAmplitude = Math.max(highestAmplitude, turningPointY);
+      }
+    }
+
+    if (periodEstimates.length) {
+      const actualCutoff = cutoff * highestAmplitude;
+      let periodIndex = 0;
+
+      for (let i = 0; i < ampEstimates.length; i++) {
+        if (ampEstimates[i] >= actualCutoff) {
+          periodIndex = i;
+          break;
+        }
+      }
+
+      const period = periodEstimates[periodIndex];
+      const pitchEstimate = sampleRate / period;
+
+      if (pitchEstimate > LOWER_PITCH_CUTOFF) {
+        pitch = pitchEstimate;
+      }
+    }
+
+    return {
+      probability: highestAmplitude,
+      freq: pitch,
+    };
+  };
 }
-*/
 
+// Wrapper function to maintain compatibility with existing code
 function autoCorrelate(buf, sampleRate) {
-  // Implements the ACF2+ algorithm
-  var SIZE = buf.length;
-  var rms = 0;
-
-  for (var i = 0; i < SIZE; i++) {
-    var val = buf[i];
-    rms += val * val;
-  }
-  rms = Math.sqrt(rms / SIZE);
-  //   console.log("RMS value:", rms);
-  if (rms < 0.01) {
-    // not enough signal
-    // console.log("Signal too weak");
-    return -1;
+  if (!macleodDetector) {
+    macleodConfig.sampleRate = sampleRate;
+    macleodDetector = Macleod(macleodConfig);
   }
 
-  var r1 = 0,
-    r2 = SIZE - 1,
-    thres = 0.2;
-  for (var i = 0; i < SIZE / 2; i++)
-    if (Math.abs(buf[i]) < thres) {
-      r1 = i;
-      break;
-    }
-  for (var i = 1; i < SIZE / 2; i++)
-    if (Math.abs(buf[SIZE - i]) < thres) {
-      r2 = SIZE - i;
-      break;
-    }
-
-  buf = buf.slice(r1, r2);
-  SIZE = buf.length;
-
-  var c = new Array(SIZE).fill(0);
-  for (var i = 0; i < SIZE; i++)
-    for (var j = 0; j < SIZE - i; j++) c[i] = c[i] + buf[j] * buf[j + i];
-
-  var d = 0;
-  while (c[d] > c[d + 1]) d++;
-  var maxval = -1,
-    maxpos = -1;
-  for (var i = d; i < SIZE; i++) {
-    if (c[i] > maxval) {
-      maxval = c[i];
-      maxpos = i;
-    }
-  }
-  var T0 = maxpos;
-
-  var x1 = c[T0 - 1],
-    x2 = c[T0],
-    x3 = c[T0 + 1];
-  a = (x1 + x3 - 2 * x2) / 2;
-  b = (x3 - x1) / 2;
-  if (a) T0 = T0 - b / (2 * a);
-
-  return sampleRate / T0;
+  const result = macleodDetector(buf);
+  return result.freq;
 }
 
 function updatePitch(time) {
@@ -357,7 +391,7 @@ function updatePitch(time) {
   const now = Date.now();
 
   // Check for silence
-  if (rms < 0.01) {
+  if (rms < 0.03) {
     detectedNoteElem.innerText = "-";
     if (isCurrentlyPlaying) {
       // If we've been silent for long enough, consider the note as ended
