@@ -206,6 +206,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return selectedNotes;
   }
 
+  // Initialize random-js engine and distribution
+  const mt = Random.MersenneTwister19937.autoSeed();
+  const real = Random.real(0, 1);
+
   // Object to track how many times each note has been shown
   let noteFrequencies = {};
 
@@ -255,8 +259,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Calculate total weight
     const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
 
-    // Get a random value between 0 and total weight
-    let random = Math.random() * totalWeight;
+    // Get a random value between 0 and total weight using random-js
+    let random = real(mt) * totalWeight;
     let newNote;
 
     // Select note based on weights
