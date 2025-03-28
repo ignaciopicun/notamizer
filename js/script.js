@@ -49,6 +49,46 @@ document.addEventListener("DOMContentLoaded", () => {
       // console.log("Comparing:", normalizedDetected, normalizedDisplayed);
       if (normalizedDetected === normalizedDisplayed) {
         audioFeedback.playCorrect();
+        if (practiceMode) {
+          const now = Date.now();
+          if (!window.correctNoteTimes) {
+            window.correctNoteTimes = [];
+          }
+          
+          if (window.correctNoteTimes.length > 0) {
+            // Calculate time difference with last note
+            const timeDiff = now - window.correctNoteTimes[window.correctNoteTimes.length - 1];
+            const instantBpm = Math.round(60000 / timeDiff);
+
+            // Only update if the BPM is reasonable (between 10 and 240)
+            if (instantBpm >= 10 && instantBpm <= 240) {
+              window.correctNoteTimes.push(now);
+              // Keep only the last 6 timestamps
+              if (window.correctNoteTimes.length > 6) {
+                window.correctNoteTimes.shift();
+              }
+              
+              // Calculate average BPM from all intervals if we have enough notes
+              if (window.correctNoteTimes.length >= 6) {
+                let totalBpm = 0;
+                for (let i = 1; i < window.correctNoteTimes.length; i++) {
+                  const interval = window.correctNoteTimes[i] - window.correctNoteTimes[i-1];
+                  totalBpm += 60000 / interval;
+                }
+                const averageBpm = Math.round(totalBpm / (window.correctNoteTimes.length - 1));
+                tempoValue.textContent = averageBpm;
+              }
+            } else {
+              // Reset if timing is unreasonable
+              window.correctNoteTimes = [];
+              tempoValue.textContent = '--';
+            }
+          } else {
+            window.correctNoteTimes.push(now);
+          }
+          // In practice mode, move to next note when correct note is detected
+          updateNote();
+        }
       } else {
         audioFeedback.playIncorrect();
       }
@@ -76,6 +116,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // Store the interval ID for the metronome
   let metronomeInterval = null;
   let tempo = 60; // Default tempo (60 BPM = 1 second)
+  let practiceMode = false; // Practice mode flag
+  let lastCorrectNoteTime = 0; // Track timing for BPM calculation
+  let correctNoteCount = 0; // Count consecutive correct notes
+  const bpmWindow = 5; // Number of correct notes to calculate average BPM
 
   // Initialize local storage for settings or use defaults
   function initializeSettings() {
@@ -85,7 +129,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const settings = JSON.parse(savedSettings);
         tempo = settings.tempo || 60;
         tempoSlider.value = tempo;
-        tempoValue.textContent = tempo;
+        practiceMode = settings.practiceMode || false;
+        document.getElementById("practice-mode").checked = practiceMode;
+        // Set initial tempo control visibility and display
+        document
+          .querySelector(".tempo-control")
+          .classList.toggle("hidden", practiceMode);
+        tempoValue.textContent = practiceMode ? "--" : tempo;
 
         // Apply saved checkbox states if available
         if (settings.noteSelections) {
@@ -107,6 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function saveSettings() {
     const settings = {
       tempo: tempo,
+      practiceMode: practiceMode,
       noteSelections: {},
     };
 
@@ -192,19 +243,66 @@ document.addEventListener("DOMContentLoaded", () => {
       clearInterval(metronomeInterval);
     }
 
-    // Calculate interval in milliseconds (60000 ms / BPM)
-    const intervalMs = Math.round(60000 / tempo);
-
-    // Set new interval
-    metronomeInterval = setInterval(updateNote, intervalMs);
+    if (!practiceMode) {
+      // In normal mode, use interval-based updates
+      const intervalMs = Math.round(60000 / tempo);
+      metronomeInterval = setInterval(updateNote, intervalMs);
+    } else {
+      // In practice mode, just show the first note
+      updateNote();
+    }
   }
+
+  // Event listener for practice mode toggle
+  document.getElementById("practice-mode").addEventListener("change", (e) => {
+    practiceMode = e.target.checked;
+    // Toggle tempo control visibility
+    document
+      .querySelector(".tempo-control")
+      .classList.toggle("hidden", practiceMode);
+    // Reset BPM tracking when entering practice mode
+    if (practiceMode) {
+      tempoValue.textContent = "--";
+      window.correctNoteTimes = [];
+      // Start pitch detection if not already started
+      if (!isPlaying) {
+        startPitchDetect();
+        startListeningBtn.disabled = true;
+        stopListeningBtn.disabled = false;
+        isPlaying = true;
+      }
+    } else {
+      tempoValue.textContent = tempo;
+      // Stop pitch detection if it was started by practice mode
+      if (isPlaying) {
+        if (mediaStreamSource) {
+          mediaStreamSource.disconnect();
+        }
+        if (analyser) {
+          analyser.disconnect();
+        }
+        if (!window.cancelAnimationFrame) {
+          window.cancelAnimationFrame = window.webkitCancelAnimationFrame;
+        }
+        window.cancelAnimationFrame(rafID);
+        audioContext = null;
+        isPlaying = false;
+        startListeningBtn.disabled = false;
+        stopListeningBtn.disabled = true;
+      }
+    }
+    startMetronome();
+    saveSettings();
+  });
 
   // Event listener for tempo slider
   tempoSlider.addEventListener("input", (e) => {
-    tempo = parseInt(e.target.value);
-    tempoValue.textContent = tempo;
-    startMetronome();
-    saveSettings();
+    if (!practiceMode) {
+      tempo = parseInt(e.target.value);
+      tempoValue.textContent = tempo;
+      startMetronome();
+      saveSettings();
+    }
   });
 
   // Function to toggle all checkboxes in a row (for a specific note)
