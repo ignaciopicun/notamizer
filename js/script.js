@@ -206,6 +206,18 @@ document.addEventListener("DOMContentLoaded", () => {
     return selectedNotes;
   }
 
+  // Object to track how many times each note has been shown
+  let noteFrequencies = {};
+
+  // Function to reset note frequencies when selection changes
+  function resetNoteFrequencies() {
+    noteFrequencies = {};
+    const selectedNotes = getSelectedNotes();
+    selectedNotes.forEach(note => {
+      noteFrequencies[note] = 0;
+    });
+  }
+
   // Function to generate a random note that's different from the current one
   function getRandomNote() {
     const selectedNotes = getSelectedNotes();
@@ -220,12 +232,53 @@ document.addEventListener("DOMContentLoaded", () => {
       return selectedNotes[0];
     }
 
-    // Get a new random note that's different from the current one
+    // Initialize frequencies if needed
+    if (Object.keys(noteFrequencies).length === 0) {
+      resetNoteFrequencies();
+    }
+
+    // Check if we need to reset frequencies (if selection changed)
+    const currentNotes = Object.keys(noteFrequencies);
+    if (currentNotes.length !== selectedNotes.length || 
+        !selectedNotes.every(note => currentNotes.includes(note))) {
+      resetNoteFrequencies();
+    }
+
+    // Calculate weights based on inverse frequency
+    const maxFreq = Math.max(...Object.values(noteFrequencies));
+    const weights = selectedNotes.map(note => {
+      const freq = noteFrequencies[note];
+      // Add 1 to avoid division by zero and ensure some chance for all notes
+      return maxFreq - freq + 1;
+    });
+
+    // Calculate total weight
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+
+    // Get a random value between 0 and total weight
+    let random = Math.random() * totalWeight;
     let newNote;
-    do {
-      const randomIndex = Math.floor(Math.random() * selectedNotes.length);
-      newNote = selectedNotes[randomIndex];
-    } while (newNote === currentNote && selectedNotes.length > 1);
+
+    // Select note based on weights
+    for (let i = 0; i < selectedNotes.length; i++) {
+      if (random <= weights[i]) {
+        newNote = selectedNotes[i];
+        break;
+      }
+      random -= weights[i];
+    }
+
+    // If no note was selected or it's the same as current (and we have options)
+    if (!newNote || (newNote === currentNote && selectedNotes.length > 1)) {
+      // Try again with the least shown note that's different from current
+      const sortedNotes = selectedNotes
+        .filter(note => note !== currentNote)
+        .sort((a, b) => noteFrequencies[a] - noteFrequencies[b]);
+      newNote = sortedNotes[0] || selectedNotes[0];
+    }
+
+    // Update frequency for the selected note
+    noteFrequencies[newNote]++;
 
     return newNote;
   }
