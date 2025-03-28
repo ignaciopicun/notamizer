@@ -342,6 +342,21 @@ function autoCorrelate(buf, sampleRate) {
 function updatePitch(time) {
   var cycles = new Array();
   analyser.getFloatTimeDomainData(buf);
+  
+  // Calculate RMS volume
+  let sum = 0;
+  for (let i = 0; i < buf.length; i++) {
+    sum += buf[i] * buf[i];
+  }
+  const rms = Math.sqrt(sum / buf.length);
+  
+  // Only process pitch if volume is above threshold
+  if (rms < 0.01) { // Adjust this threshold value to control sensitivity
+    detectedNoteElem.innerText = "-";
+    rafID = window.requestAnimationFrame(updatePitch);
+    return;
+  }
+  
   var ac = autoCorrelate(buf, audioContext.sampleRate);
   // TODO: Paint confidence meter on canvasElem here.
 
