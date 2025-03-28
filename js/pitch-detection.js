@@ -35,11 +35,16 @@ var noteElem, detectedNoteElem;
 
 // Variables for note stability detection
 var noteBuffer = [];
-var noteBufferSize = 5; // Number of samples to check for stability
-var requiredStability = 4; // Number of matching samples needed for stability
+var noteBufferSize = 8; // Number of samples to check for stability
+var requiredStability = 7; // Number of matching samples needed for stability
 var lastEmittedNote = null;
 var lastDetectionTime = 0;
 var detectionDebounceTime = 150; // Minimum time between note detections in ms
+var noteStartTime = 0; // When the current note started
+var isCurrentlyPlaying = false; // Whether a note is currently being played
+var longNoteThreshold = 400; // Time in ms to consider a note as "long"
+var silenceThreshold = 100; // Time in ms of silence to consider a note as ended
+var lastSilenceTime = 0; // Last time we detected silence
 
 // Helper function to check note stability
 function checkNoteStability(note) {
@@ -349,17 +354,28 @@ function updatePitch(time) {
     sum += buf[i] * buf[i];
   }
   const rms = Math.sqrt(sum / buf.length);
+  const now = Date.now();
 
-  // Only process pitch if volume is above threshold
+  // Check for silence
   if (rms < 0.01) {
-    // Adjust this threshold value to control sensitivity
     detectedNoteElem.innerText = "-";
+    if (isCurrentlyPlaying) {
+      // If we've been silent for long enough, consider the note as ended
+      if (now - lastSilenceTime >= silenceThreshold) {
+        isCurrentlyPlaying = false;
+        noteStartTime = 0;
+      } else if (lastSilenceTime === 0) {
+        lastSilenceTime = now;
+      }
+    }
     rafID = window.requestAnimationFrame(updatePitch);
     return;
   }
 
+  // Reset silence timer if we detect sound
+  lastSilenceTime = 0;
+
   var ac = autoCorrelate(buf, audioContext.sampleRate);
-  // TODO: Paint confidence meter on canvasElem here.
 
   if (ac == -1) {
     detectedNoteElem.innerText = "-";
@@ -369,21 +385,21 @@ function updatePitch(time) {
     const detectedNote = noteStrings[note % 12];
     detectedNoteElem.innerHTML = detectedNote;
 
-    // Check note stability and debounce
-    const now = Date.now();
-    if (
-      checkNoteStability(detectedNote) &&
-      now - lastDetectionTime >= detectionDebounceTime
-    ) {
-      // Clear buffer after emitting
-      noteBuffer = [];
-
-      // Dispatch noteDetected event
-      const noteDetectedEvent = new CustomEvent("noteDetected", {
-        detail: { note: detectedNote },
-      });
-      document.dispatchEvent(noteDetectedEvent);
-
+    // Check note stability
+    if (checkNoteStability(detectedNote)) {
+      if (!isCurrentlyPlaying) {
+        // Start of a new note
+        noteStartTime = now;
+        isCurrentlyPlaying = true;
+        emitNoteDetected(detectedNote, false);
+      } else if (
+        detectedNote !== lastEmittedNote &&
+        now - noteStartTime >= longNoteThreshold
+      ) {
+        // This is a long note that changed to a different note
+        noteStartTime = now;
+        emitNoteDetected(detectedNote, true);
+      }
       lastEmittedNote = detectedNote;
       lastDetectionTime = now;
     }
@@ -392,4 +408,19 @@ function updatePitch(time) {
   if (!window.requestAnimationFrame)
     window.requestAnimationFrame = window.webkitRequestAnimationFrame;
   rafID = window.requestAnimationFrame(updatePitch);
+}
+
+// Helper function to emit note detected events
+function emitNoteDetected(note, isLongNote) {
+  // Clear buffer after emitting
+  noteBuffer = [];
+
+  // Dispatch noteDetected event with additional info
+  const noteDetectedEvent = new CustomEvent("noteDetected", {
+    detail: {
+      note: note,
+      isLongNote: isLongNote,
+    },
+  });
+  document.dispatchEvent(noteDetectedEvent);
 }

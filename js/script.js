@@ -38,13 +38,16 @@ function normalizeNote(note) {
 document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("noteDetected", (e) => {
     const detectedNote = e.detail.note;
+    const isLongNote = e.detail.isLongNote;
+
     // Compare with current displayed note using normalized forms
     const normalizedDetected = normalizeNote(detectedNote);
     const normalizedDisplayed = normalizeNote(currentNote);
-    // console.log("Comparing:", normalizedDetected, normalizedDisplayed);
+
     if (normalizedDetected === normalizedDisplayed) {
       audioFeedback.playCorrect();
-      if (practiceMode) {
+      // Only move to next note in practice mode if it's not a long note
+      if (practiceMode && !isLongNote) {
         const now = Date.now();
         if (!window.correctNoteTimes) {
           window.correctNoteTimes = [];
