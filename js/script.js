@@ -36,62 +36,60 @@ function normalizeNote(note) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Initialize pitch detection event listener
-  let lastDetectedNote = null;
   document.addEventListener("noteDetected", (e) => {
     const detectedNote = e.detail.note;
-    // Only play feedback if the detected note changes
-    if (detectedNote !== lastDetectedNote) {
-      lastDetectedNote = detectedNote;
-      // Compare with current displayed note using normalized forms
-      const normalizedDetected = normalizeNote(detectedNote);
-      const normalizedDisplayed = normalizeNote(currentNote);
-      // console.log("Comparing:", normalizedDetected, normalizedDisplayed);
-      if (normalizedDetected === normalizedDisplayed) {
-        audioFeedback.playCorrect();
-        if (practiceMode) {
-          const now = Date.now();
-          if (!window.correctNoteTimes) {
-            window.correctNoteTimes = [];
-          }
-          
-          if (window.correctNoteTimes.length > 0) {
-            // Calculate time difference with last note
-            const timeDiff = now - window.correctNoteTimes[window.correctNoteTimes.length - 1];
-            const instantBpm = Math.round(60000 / timeDiff);
+    // Compare with current displayed note using normalized forms
+    const normalizedDetected = normalizeNote(detectedNote);
+    const normalizedDisplayed = normalizeNote(currentNote);
+    // console.log("Comparing:", normalizedDetected, normalizedDisplayed);
+    if (normalizedDetected === normalizedDisplayed) {
+      audioFeedback.playCorrect();
+      if (practiceMode) {
+        const now = Date.now();
+        if (!window.correctNoteTimes) {
+          window.correctNoteTimes = [];
+        }
 
-            // Only update if the BPM is reasonable (between 10 and 240)
-            if (instantBpm >= 10 && instantBpm <= 240) {
-              window.correctNoteTimes.push(now);
-              // Keep only the last 6 timestamps
-              if (window.correctNoteTimes.length > 6) {
-                window.correctNoteTimes.shift();
+        if (window.correctNoteTimes.length > 0) {
+          // Calculate time difference with last note
+          const timeDiff =
+            now - window.correctNoteTimes[window.correctNoteTimes.length - 1];
+          const instantBpm = Math.round(60000 / timeDiff);
+
+          // Only update if the BPM is reasonable (between 10 and 240)
+          if (instantBpm >= 10 && instantBpm <= 240) {
+            window.correctNoteTimes.push(now);
+            // Keep only the last 6 timestamps
+            if (window.correctNoteTimes.length > 6) {
+              window.correctNoteTimes.shift();
+            }
+
+            // Calculate average BPM from all intervals if we have enough notes
+            if (window.correctNoteTimes.length >= 6) {
+              let totalBpm = 0;
+              for (let i = 1; i < window.correctNoteTimes.length; i++) {
+                const interval =
+                  window.correctNoteTimes[i] - window.correctNoteTimes[i - 1];
+                totalBpm += 60000 / interval;
               }
-              
-              // Calculate average BPM from all intervals if we have enough notes
-              if (window.correctNoteTimes.length >= 6) {
-                let totalBpm = 0;
-                for (let i = 1; i < window.correctNoteTimes.length; i++) {
-                  const interval = window.correctNoteTimes[i] - window.correctNoteTimes[i-1];
-                  totalBpm += 60000 / interval;
-                }
-                const averageBpm = Math.round(totalBpm / (window.correctNoteTimes.length - 1));
-                tempoValue.textContent = averageBpm;
-              }
-            } else {
-              // Reset if timing is unreasonable
-              window.correctNoteTimes = [];
-              tempoValue.textContent = '--';
+              const averageBpm = Math.round(
+                totalBpm / (window.correctNoteTimes.length - 1)
+              );
+              tempoValue.textContent = averageBpm;
             }
           } else {
-            window.correctNoteTimes.push(now);
+            // Reset if timing is unreasonable
+            window.correctNoteTimes = [];
+            tempoValue.textContent = "--";
           }
-          // In practice mode, move to next note when correct note is detected
-          updateNote();
+        } else {
+          window.correctNoteTimes.push(now);
         }
-      } else {
-        audioFeedback.playIncorrect();
+        // In practice mode, move to next note when correct note is detected
+        updateNote();
       }
+    } else {
+      audioFeedback.playIncorrect();
     }
   });
 
@@ -231,8 +229,6 @@ document.addEventListener("DOMContentLoaded", () => {
       noteElement.textContent = newNote;
       // Remove animation class
       noteElement.classList.remove("note-change");
-      // Reset audio feedback for the new note
-      audioFeedback.setNewNote(newNote);
     }, 150);
   }
 

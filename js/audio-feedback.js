@@ -1,32 +1,19 @@
 // Audio feedback module
 class AudioFeedback {
-    constructor() {
-        this.correctSound = document.getElementById('correct-sound');
-        this.incorrectSound = document.getElementById('incorrect-sound');
-        this.currentNote = null;
-        this.hasPlayedForCurrentNote = false;
-    }
+  constructor() {
+    this.correctSound = document.getElementById("correct-sound");
+    this.incorrectSound = document.getElementById("incorrect-sound");
+  }
 
-    setNewNote(note) {
-        this.currentNote = note;
-        this.hasPlayedForCurrentNote = false;
-    }
+  playCorrect() {
+    this.correctSound.currentTime = 0;
+    this.correctSound.play();
+  }
 
-    playCorrect() {
-        if (!this.hasPlayedForCurrentNote) {
-            this.correctSound.currentTime = 0;
-            this.correctSound.play();
-            this.hasPlayedForCurrentNote = true;
-        }
-    }
-
-    playIncorrect() {
-        if (!this.hasPlayedForCurrentNote) {
-            this.incorrectSound.currentTime = 0;
-            this.incorrectSound.play();
-            this.hasPlayedForCurrentNote = true;
-        }
-    }
+  playIncorrect() {
+    this.incorrectSound.currentTime = 0;
+    this.incorrectSound.play();
+  }
 }
 
 // Initialize audio feedback

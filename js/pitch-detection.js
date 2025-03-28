@@ -39,24 +39,24 @@ var noteBufferSize = 5; // Number of samples to check for stability
 var requiredStability = 4; // Number of matching samples needed for stability
 var lastEmittedNote = null;
 var lastDetectionTime = 0;
-var detectionDebounceTime = 200; // Minimum time between note detections in ms
+var detectionDebounceTime = 150; // Minimum time between note detections in ms
 
 // Helper function to check note stability
 function checkNoteStability(note) {
-    if (!note) return false;
-    
-    // Add new note to buffer
-    noteBuffer.push(note);
-    // Keep buffer at fixed size
-    if (noteBuffer.length > noteBufferSize) {
-        noteBuffer.shift();
-    }
-    
-    // Count occurrences of the current note in the buffer
-    const occurrences = noteBuffer.filter(n => n === note).length;
-    
-    // Check if we have enough stable readings
-    return occurrences >= requiredStability;
+  if (!note) return false;
+
+  // Add new note to buffer
+  noteBuffer.push(note);
+  // Keep buffer at fixed size
+  if (noteBuffer.length > noteBufferSize) {
+    noteBuffer.shift();
+  }
+
+  // Count occurrences of the current note in the buffer
+  const occurrences = noteBuffer.filter((n) => n === note).length;
+
+  // Check if we have enough stable readings
+  return occurrences >= requiredStability;
 }
 
 window.onload = function () {
@@ -342,21 +342,22 @@ function autoCorrelate(buf, sampleRate) {
 function updatePitch(time) {
   var cycles = new Array();
   analyser.getFloatTimeDomainData(buf);
-  
+
   // Calculate RMS volume
   let sum = 0;
   for (let i = 0; i < buf.length; i++) {
     sum += buf[i] * buf[i];
   }
   const rms = Math.sqrt(sum / buf.length);
-  
+
   // Only process pitch if volume is above threshold
-  if (rms < 0.01) { // Adjust this threshold value to control sensitivity
+  if (rms < 0.01) {
+    // Adjust this threshold value to control sensitivity
     detectedNoteElem.innerText = "-";
     rafID = window.requestAnimationFrame(updatePitch);
     return;
   }
-  
+
   var ac = autoCorrelate(buf, audioContext.sampleRate);
   // TODO: Paint confidence meter on canvasElem here.
 
@@ -370,12 +371,13 @@ function updatePitch(time) {
 
     // Check note stability and debounce
     const now = Date.now();
-    if (checkNoteStability(detectedNote) && 
-        detectedNote !== lastEmittedNote && 
-        now - lastDetectionTime >= detectionDebounceTime) {
+    if (
+      checkNoteStability(detectedNote) &&
+      now - lastDetectionTime >= detectionDebounceTime
+    ) {
       // Clear buffer after emitting
       noteBuffer = [];
-      
+
       // Dispatch noteDetected event
       const noteDetectedEvent = new CustomEvent("noteDetected", {
         detail: { note: detectedNote },
