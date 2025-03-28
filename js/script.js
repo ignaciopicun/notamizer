@@ -36,9 +36,14 @@ function normalizeNote(note) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  let lastNoteUpdateTime = 0;
+  let lastDetectedNote = null;
+  const gracePeriod = 400; // ms to wait before playing incorrect sounds after a note update
+
   document.addEventListener("noteDetected", (e) => {
     const detectedNote = e.detail.note;
     const isLongNote = e.detail.isLongNote;
+    const now = Date.now();
 
     // Compare with current displayed note using normalized forms
     const normalizedDetected = normalizeNote(detectedNote);
@@ -92,7 +97,14 @@ document.addEventListener("DOMContentLoaded", () => {
         updateNote();
       }
     } else {
-      audioFeedback.playIncorrect();
+      // Play incorrect sound if:
+      // 1. We're outside the grace period, OR
+      // 2. We're inside the grace period but detected a different note than before
+      if (now - lastNoteUpdateTime > gracePeriod || 
+          (lastDetectedNote !== null && normalizedDetected !== normalizeNote(lastDetectedNote))) {
+        audioFeedback.playIncorrect();
+      }
+      lastDetectedNote = detectedNote;
     }
   });
 
@@ -222,6 +234,9 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateNote() {
     // Add animation class
     noteElement.classList.add("note-change");
+
+    // Update the last note update time
+    lastNoteUpdateTime = Date.now();
 
     // Generate a new random note
     const newNote = getRandomNote();
