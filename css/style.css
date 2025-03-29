@@ -35,7 +35,10 @@ body {
   justify-content: flex-start;
   gap: 0.75rem;
   text-align: left;
+  position: relative;
 }
+
+
 
 .app-title {
   font-family: 'Cherry Bomb One', cursive;

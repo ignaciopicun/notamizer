@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Notamizer - Random Musical Notes</title>
+    <title data-i18n="title">Notamizer - Notas Musicales Aleatorias</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="assets/icon.png" />
     <!-- Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -33,9 +36,10 @@
 
       <section class="controls">
         <article>
-          <h3>Tempo Control</h3>
+          <h3 data-i18n="tempoControl">Control de Tempo</h3>
           <label for="tempo">
-            Speed: <span id="tempo-value">45</span> BPM
+            <span data-i18n="speed">Velocidad</span>:
+            <span id="tempo-value">45</span> <span data-i18n="bpm">BPM</span>
             <div class="tempo-control">
               <input
                 type="range"
@@ -50,14 +54,14 @@
           <div class="mode-toggle">
             <label for="practice-mode">
               <input type="checkbox" id="practice-mode" name="practice-mode" />
-              Wait for correct note
+              <span data-i18n="waitForCorrectNote">Esperar nota correcta</span>
             </label>
           </div>
         </article>
 
         <!-- Floating practice controls container -->
         <div class="floating-practice-container compact">
-          <span class="practice-label">Practice</span>
+          <span class="practice-label" data-i18n="practice">Práctica</span>
           <div class="practice-controls minimal">
             <button
               id="start-listening"
@@ -82,19 +86,19 @@
         </div>
 
         <article>
-          <h3>Note Selection</h3>
+          <h3 data-i18n="noteSelection">Selección de Notas</h3>
           <div class="note-selection">
             <div class="note-grid">
               <!-- Note selection grid -->
-              <div class="note-cell header">Note</div>
+              <div class="note-cell header" data-i18n="note">Nota</div>
               <div class="note-cell header toggle-column" data-column="natural">
-                Natural
+                <span data-i18n="natural">Natural</span>
               </div>
               <div class="note-cell header toggle-column" data-column="sharp">
-                Sharp (#)
+                <span data-i18n="sharp">Sostenido (#)</span>
               </div>
               <div class="note-cell header toggle-column" data-column="flat">
-                Flat (b)
+                <span data-i18n="flat">Bemol (b)</span>
               </div>
 
               <!-- C -->
@@ -309,8 +313,16 @@
             </div>
 
             <div class="selection-buttons">
-              <button id="select-all" class="secondary">Select All</button>
-              <button id="deselect-all" class="secondary">Deselect All</button>
+              <button id="select-all" class="secondary" data-i18n="selectAll">
+                Seleccionar Todo
+              </button>
+              <button
+                id="deselect-all"
+                class="secondary"
+                data-i18n="deselectAll"
+              >
+                Deseleccionar Todo
+              </button>
             </div>
           </div>
         </article>
@@ -331,6 +343,7 @@
     <!-- Scripts -->
     <script src="js/pitch-detection.js"></script>
     <script src="js/audio-feedback.js"></script>
+    <script src="js/translations.js"></script>
     <script src="js/script.js"></script>
   </body>
 </html>

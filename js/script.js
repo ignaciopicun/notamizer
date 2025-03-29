@@ -35,7 +35,27 @@ function normalizeNote(note) {
   return preferredForm[note] || note;
 }
 
+// Function to update all translations on the page
+function updateTranslations(lang) {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach((element) => {
+    const key = element.getAttribute("data-i18n");
+    if (translations[lang] && translations[lang][key]) {
+      if (element.tagName.toLowerCase() === "title") {
+        element.textContent = translations[lang][key];
+      } else {
+        element.textContent = translations[lang][key];
+      }
+    }
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  // Get browser language or default to Spanish
+  const browserLang = navigator.language.split("-")[0];
+  const lang = ["es", "en"].includes(browserLang) ? browserLang : "es";
+  updateTranslations(lang);
+
   let lastNoteUpdateTime = 0;
   let lastDetectedNote = null;
   const gracePeriod = 400; // ms to wait before playing incorrect sounds after a note update
@@ -100,8 +120,11 @@ document.addEventListener("DOMContentLoaded", () => {
       // Play incorrect sound if:
       // 1. We're outside the grace period, OR
       // 2. We're inside the grace period but detected a different note than before
-      if (now - lastNoteUpdateTime > gracePeriod || 
-          (lastDetectedNote !== null && normalizedDetected !== normalizeNote(lastDetectedNote))) {
+      if (
+        now - lastNoteUpdateTime > gracePeriod ||
+        (lastDetectedNote !== null &&
+          normalizedDetected !== normalizeNote(lastDetectedNote))
+      ) {
         audioFeedback.playIncorrect();
       }
       lastDetectedNote = detectedNote;
@@ -217,7 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function resetNoteFrequencies() {
     noteFrequencies = {};
     const selectedNotes = getSelectedNotes();
-    selectedNotes.forEach(note => {
+    selectedNotes.forEach((note) => {
       noteFrequencies[note] = 0;
     });
   }
@@ -243,14 +266,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Check if we need to reset frequencies (if selection changed)
     const currentNotes = Object.keys(noteFrequencies);
-    if (currentNotes.length !== selectedNotes.length || 
-        !selectedNotes.every(note => currentNotes.includes(note))) {
+    if (
+      currentNotes.length !== selectedNotes.length ||
+      !selectedNotes.every((note) => currentNotes.includes(note))
+    ) {
       resetNoteFrequencies();
     }
 
     // Calculate weights based on inverse frequency
     const maxFreq = Math.max(...Object.values(noteFrequencies));
-    const weights = selectedNotes.map(note => {
+    const weights = selectedNotes.map((note) => {
       const freq = noteFrequencies[note];
       // Add 1 to avoid division by zero and ensure some chance for all notes
       return maxFreq - freq + 1;
@@ -276,7 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!newNote || (newNote === currentNote && selectedNotes.length > 1)) {
       // Try again with the least shown note that's different from current
       const sortedNotes = selectedNotes
-        .filter(note => note !== currentNote)
+        .filter((note) => note !== currentNote)
         .sort((a, b) => noteFrequencies[a] - noteFrequencies[b]);
       newNote = sortedNotes[0] || selectedNotes[0];
     }
